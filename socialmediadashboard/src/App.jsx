@@ -298,6 +298,10 @@ export default function App() {
       <SettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
+        projects={projects}
+        setProjects={setProjects}
+        accounts={accounts}
+        setAccounts={setAccounts}
         geminiApiKey={geminiApiKey}
         setGeminiApiKey={setGeminiApiKey}
         onExportBackup={handleExportBackup}
