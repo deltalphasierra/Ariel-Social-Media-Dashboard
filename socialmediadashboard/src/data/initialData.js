@@ -1,34 +1,5 @@
 // Master Projects & Accounts for Ariel (Clean Slate - No Sample Data)
-export const initialProjects = [
-  {
-    id: 'proj-1',
-    name: 'Pintu Potret',
-    category: 'Photography & Creative Studio',
-    description: 'Jasa fotografi, videografi, dan visual branding profesional Malang & Pasuruan.',
-    color: '#ec4899', // Pink
-  },
-  {
-    id: 'proj-2',
-    name: 'KL Bizhub Malang',
-    category: 'Commercial & Business Park',
-    description: 'Kawasan komersial, pergudangan, ruko, dan sentra bisnis modern terpadu di Malang.',
-    color: '#3b82f6', // Blue
-  },
-  {
-    id: 'proj-3',
-    name: 'Singhasari Hunian & Komersial',
-    category: 'Residential & Commercial Estate',
-    description: 'Kawasan hunian modern, ruko komersial, dan investasi properti bernilai tinggi di Singhasari Malang.',
-    color: '#f59e0b', // Amber
-  },
-  {
-    id: 'proj-4',
-    name: 'Riverside Malang',
-    category: 'Riverside Residential',
-    description: 'Hunian eksklusif tepi sungai dengan udara asri sejuk alami dan fasilitas lengkap di Malang.',
-    color: '#10b981', // Emerald
-  },
-];
+export const initialProjects = [];
 
 export const initialAccounts = [
   {
