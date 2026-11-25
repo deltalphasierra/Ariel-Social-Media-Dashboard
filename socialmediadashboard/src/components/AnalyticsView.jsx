@@ -172,18 +172,21 @@ export default function AnalyticsView({
             <h3 className="text-sm font-semibold text-white">Tren Pertumbuhan Followers 7 Hari Terakhir</h3>
             <p className="text-xs text-slate-400">Pantauan grafik kenaikan audiens di tiap akun</p>
           </div>
-          <div className="flex items-center gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-3 text-xs">
             <span className="flex items-center gap-1.5 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span> @aura.official
+              <span className="w-2.5 h-2.5 rounded-full bg-pink-500"></span> @pintupotret.id
             </span>
             <span className="flex items-center gap-1.5 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> @aura.daily (TikTok)
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> @klbizhub_malang
             </span>
             <span className="flex items-center gap-1.5 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span> @kopititiktemu.id
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span> @singhasarihuniankomersial
             </span>
             <span className="flex items-center gap-1.5 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> @zenliving.home
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> @singhasarihuniankomersil (TikTok)
+            </span>
+            <span className="flex items-center gap-1.5 text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> @riversidemalang
             </span>
           </div>
         </div>
@@ -191,34 +194,39 @@ export default function AnalyticsView({
         {/* CSS/SVG Bar Chart visualization */}
         <div className="h-44 w-full flex items-end justify-between gap-3 pt-6 px-2 border-b border-slate-800">
           {historicalAnalytics.map((item, idx) => {
-            // normalized heights relative to baseline
-            const hAuraIg = ((item.auraIg - 23500) / 1500) * 100;
-            const hAuraTt = ((item.auraTt - 45000) / 4000) * 100;
-            const hKopiIg = ((item.kopiIg - 11800) / 800) * 100;
-            const hZenIg = ((item.zenIg - 17500) / 1600) * 100;
+            const hPintu = ((item.pintuIg - 300) / 40) * 100;
+            const hKlBiz = ((item.klBizIg - 2350) / 120) * 100;
+            const hSinghaIg = ((item.singhaIg - 3650) / 200) * 100;
+            const hSinghaTt = ((item.singhaTt - 8000) / 900) * 100;
+            const hRiver = ((item.riverIg - 3980) / 160) * 100;
 
             return (
               <div key={idx} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
                 <div className="w-full flex items-end justify-center gap-1 h-32">
                   <div
-                    style={{ height: `${Math.max(15, Math.min(100, hAuraIg))}%` }}
-                    className="w-2 bg-purple-500 rounded-t hover:brightness-125 transition-all"
-                    title={`Aura IG: ${item.auraIg}`}
+                    style={{ height: `${Math.max(15, Math.min(100, hPintu))}%` }}
+                    className="w-1.5 bg-pink-500 rounded-t hover:brightness-125 transition-all"
+                    title={`Pintu Potret: ${item.pintuIg}`}
                   />
                   <div
-                    style={{ height: `${Math.max(15, Math.min(100, hAuraTt))}%` }}
-                    className="w-2 bg-cyan-400 rounded-t hover:brightness-125 transition-all"
-                    title={`Aura TikTok: ${item.auraTt}`}
+                    style={{ height: `${Math.max(15, Math.min(100, hKlBiz))}%` }}
+                    className="w-1.5 bg-blue-500 rounded-t hover:brightness-125 transition-all"
+                    title={`KL Bizhub: ${item.klBizIg}`}
                   />
                   <div
-                    style={{ height: `${Math.max(15, Math.min(100, hKopiIg))}%` }}
-                    className="w-2 bg-amber-400 rounded-t hover:brightness-125 transition-all"
-                    title={`Kopi Titik Temu: ${item.kopiIg}`}
+                    style={{ height: `${Math.max(15, Math.min(100, hSinghaIg))}%` }}
+                    className="w-1.5 bg-amber-400 rounded-t hover:brightness-125 transition-all"
+                    title={`Singhasari IG: ${item.singhaIg}`}
                   />
                   <div
-                    style={{ height: `${Math.max(15, Math.min(100, hZenIg))}%` }}
-                    className="w-2 bg-emerald-400 rounded-t hover:brightness-125 transition-all"
-                    title={`Zen Living: ${item.zenIg}`}
+                    style={{ height: `${Math.max(15, Math.min(100, hSinghaTt))}%` }}
+                    className="w-1.5 bg-cyan-400 rounded-t hover:brightness-125 transition-all"
+                    title={`Singhasari TikTok: ${item.singhaTt}`}
+                  />
+                  <div
+                    style={{ height: `${Math.max(15, Math.min(100, hRiver))}%` }}
+                    className="w-1.5 bg-emerald-400 rounded-t hover:brightness-125 transition-all"
+                    title={`Riverside Malang: ${item.riverIg}`}
                   />
                 </div>
                 <span className="text-[10px] text-slate-500 font-mono group-hover:text-slate-300">

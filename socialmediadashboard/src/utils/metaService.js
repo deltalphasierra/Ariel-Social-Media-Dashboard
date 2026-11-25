@@ -80,3 +80,60 @@ export async function fetchInstagramProfile({ igAccountId, accessToken }) {
     };
   }
 }
+
+/**
+ * Reply to an Instagram Comment via Meta Graph API
+ * Requires: instagram_manage_comments permission
+ */
+export async function replyToInstagramComment({ commentId, message, accessToken }) {
+  if (!commentId || !message || !accessToken) {
+    return { success: false, error: 'Parameter tidak lengkap.' };
+  }
+  try {
+    const url = `https://graph.facebook.com/v19.0/${commentId}/replies`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        access_token: accessToken.trim(),
+      }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      return { success: false, error: data.error.message };
+    }
+    return { success: true, id: data.id };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Send an Instagram Direct Message via Meta Messaging API
+ * Requires: instagram_manage_messages permission
+ */
+export async function sendInstagramDirectMessage({ igUserId, recipientId, message, accessToken }) {
+  if (!igUserId || !recipientId || !message || !accessToken) {
+    return { success: false, error: 'Parameter tidak lengkap.' };
+  }
+  try {
+    const url = `https://graph.facebook.com/v19.0/${igUserId}/messages`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipient: { id: recipientId },
+        message: { text: message },
+        access_token: accessToken.trim(),
+      }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      return { success: false, error: data.error.message };
+    }
+    return { success: true, messageId: data.message_id };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}

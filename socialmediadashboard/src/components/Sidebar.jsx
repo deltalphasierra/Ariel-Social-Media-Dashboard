@@ -11,6 +11,7 @@ import {
   ChevronDown,
   CheckCircle2,
   PlusCircle,
+  MessageSquare,
 } from 'lucide-react';
 import { InstagramIcon, TikTokIcon } from './SocialIcons';
 
@@ -33,6 +34,7 @@ export default function Sidebar({
   const navItems = [
     { id: 'overview', label: 'Ringkasan / Overview', icon: LayoutDashboard },
     { id: 'planner', label: 'Content Planner', icon: CalendarDays },
+    { id: 'inbox', label: 'Social Inbox & DM', icon: MessageSquare, badge: 'Live' },
     { id: 'analytics', label: 'Analitik & Metrik', icon: BarChart3 },
     { id: 'ai-studio', label: 'AI Content Studio', icon: Sparkles, badge: 'AI' },
     { id: 'team', label: 'Tim & Kolaborasi', icon: Users2 },
@@ -52,7 +54,7 @@ export default function Sidebar({
             <h1 className="font-bold text-slate-100 text-base leading-tight tracking-wide flex items-center gap-1.5">
               OmniSocial <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded font-mono font-semibold">HQ</span>
             </h1>
-            <p className="text-xs text-slate-400">3 Projects • 4 Accounts</p>
+            <p className="text-xs text-slate-400">{projects.length} Projects • {accounts.length} Accounts</p>
           </div>
         </div>
       </div>

@@ -6,6 +6,7 @@ import ContentPlanner from './components/ContentPlanner';
 import AnalyticsView from './components/AnalyticsView';
 import AIStudio from './components/AIStudio';
 import TeamView from './components/TeamView';
+import SocialInbox from './components/SocialInbox';
 import PostDetailModal from './components/PostDetailModal';
 import ExportCenterModal from './components/ExportCenterModal';
 import SettingsModal from './components/SettingsModal';
@@ -17,27 +18,47 @@ import {
   initialTeamMembers,
   initialHistoricalAnalytics,
 } from './data/initialData';
+import { initialComments, initialDMs } from './data/initialInboxData';
 
 export default function App() {
-  // Load state from localStorage or fallback to defaults
+  // Load state from localStorage or fallback to defaults (with automatic migration from legacy dummy accounts)
   const [projects, setProjects] = useState(() => {
     const saved = localStorage.getItem('omnisocial_projects');
-    return saved ? JSON.parse(saved) : initialProjects;
+    if (saved && !saved.includes('Aura Official')) {
+      return JSON.parse(saved);
+    }
+    return initialProjects;
   });
 
   const [accounts, setAccounts] = useState(() => {
     const saved = localStorage.getItem('omnisocial_accounts');
-    return saved ? JSON.parse(saved) : initialAccounts;
+    if (saved && !saved.includes('@aura.official')) {
+      return JSON.parse(saved);
+    }
+    return initialAccounts;
   });
 
   const [posts, setPosts] = useState(() => {
     const saved = localStorage.getItem('omnisocial_posts');
-    return saved ? JSON.parse(saved) : initialPosts;
+    if (saved && !saved.includes('Linen Shirt')) {
+      return JSON.parse(saved);
+    }
+    return initialPosts;
   });
 
   const [teamMembers, setTeamMembers] = useState(() => {
     const saved = localStorage.getItem('omnisocial_team');
     return saved ? JSON.parse(saved) : initialTeamMembers;
+  });
+
+  const [comments, setComments] = useState(() => {
+    const saved = localStorage.getItem('omnisocial_comments');
+    return saved ? JSON.parse(saved) : initialComments;
+  });
+
+  const [dms, setDms] = useState(() => {
+    const saved = localStorage.getItem('omnisocial_dms');
+    return saved ? JSON.parse(saved) : initialDMs;
   });
 
   const [historicalAnalytics] = useState(initialHistoricalAnalytics);
@@ -75,6 +96,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('omnisocial_team', JSON.stringify(teamMembers));
   }, [teamMembers]);
+
+  useEffect(() => {
+    localStorage.setItem('omnisocial_comments', JSON.stringify(comments));
+  }, [comments]);
+
+  useEffect(() => {
+    localStorage.setItem('omnisocial_dms', JSON.stringify(dms));
+  }, [dms]);
 
   // Handle post save (create or update)
   const handleSavePost = (savedPost) => {
@@ -233,6 +262,18 @@ export default function App() {
               onOpenPost={(post) => setEditingPost(post)}
               onOpenNewPost={() => setIsNewPostModalOpen(true)}
               onOpenAIStudio={() => setCurrentTab('ai-studio')}
+            />
+          )}
+
+          {currentTab === 'inbox' && (
+            <SocialInbox
+              accounts={accounts}
+              comments={comments}
+              setComments={setComments}
+              dms={dms}
+              setDms={setDms}
+              selectedAccountId={selectedAccountId}
+              setSelectedAccountId={setSelectedAccountId}
             />
           )}
 

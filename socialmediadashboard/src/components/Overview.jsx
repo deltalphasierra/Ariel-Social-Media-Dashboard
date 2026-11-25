@@ -74,7 +74,7 @@ export default function Overview({
               Selamat datang kembali, Tim Media Sosial! 🚀
             </h2>
             <p className="text-slate-300 text-xs mt-1 max-w-xl">
-              Memantau 3 project aktif (3 Akun Instagram & 1 Akun TikTok). Kelola ide, approval tim, kalender jadwal, hingga ekspor laporan bulanan langsung dari sini.
+              Memantau {projects.length} project aktif ({accounts.filter(a => a.platform === 'instagram').length} Instagram & {accounts.filter(a => a.platform === 'tiktok').length} TikTok). Kelola ide, approval tim, kalender jadwal, hingga ekspor laporan bulanan langsung dari sini.
             </p>
           </div>
           <div className="flex items-center gap-2.5">
@@ -176,8 +176,10 @@ export default function Overview({
         {/* Left Column: Accounts Grid (2 cols) */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-200">Kondisi 4 Akun Media Sosial</h3>
-            <span className="text-xs text-slate-400">3 Instagram + 1 TikTok</span>
+            <h3 className="text-sm font-semibold text-slate-200">Kondisi {accounts.length} Akun Media Sosial</h3>
+            <span className="text-xs text-slate-400">
+              {accounts.filter(a => a.platform === 'instagram').length} Instagram + {accounts.filter(a => a.platform === 'tiktok').length} TikTok
+            </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
