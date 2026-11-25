@@ -195,35 +195,78 @@ export async function fetchInstagramProfile({ igAccountId, accessToken, targetHa
 }
 
 /**
- * Load current account insights. Insights are optional because Meta may allow
- * profile access while the token lacks instagram_manage_insights permission.
+ * Load current account insights.
+ * Separates total_value metrics (profile_views, accounts_engaged, total_interactions)
+ * from time-series metrics (reach) so Meta Graph API does not throw (#100).
  */
 export async function fetchInstagramInsights({ igAccountId, accessToken }) {
-  if (!igAccountId || !accessToken) return { success: false, error: 'ID akun atau token Meta belum tersedia.' };
+  if (!igAccountId || !accessToken) {
+    return { success: false, error: 'ID akun atau token Meta belum tersedia.' };
+  }
+
+  const cleanId = igAccountId.trim();
+  const cleanToken = accessToken.trim();
 
   try {
-    const params = new URLSearchParams({
-      metric: 'reach,profile_views,accounts_engaged,total_interactions',
+    // 1. Fetch total_value metrics
+    const totalValueParams = new URLSearchParams({
+      metric: 'profile_views,accounts_engaged,total_interactions',
+      metric_type: 'total_value',
       period: 'day',
-      access_token: accessToken.trim(),
+      access_token: cleanToken,
     });
-    const response = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/${igAccountId}/insights?${params}`);
-    const payload = await response.json();
-    if (!response.ok || payload.error) {
-      return { success: false, error: payload.error?.message || 'Meta tidak dapat mengambil insights akun ini.' };
+
+    const totalRes = await fetch(
+      `https://graph.facebook.com/${GRAPH_API_VERSION}/${cleanId}/insights?${totalValueParams}`
+    );
+    const totalPayload = await totalRes.json();
+
+    if (!totalRes.ok || totalPayload.error) {
+      return {
+        success: false,
+        error: totalPayload.error?.message || 'Meta tidak dapat mengambil total_value insights akun ini.',
+      };
     }
 
-    const values = Object.fromEntries((payload.data || []).map((metric) => [
-      metric.name,
-      metric.values?.[metric.values.length - 1]?.value ?? 0,
-    ]));
+    const totalValues = Object.fromEntries(
+      (totalPayload.data || []).map((metric) => [
+        metric.name,
+        metric.total_value?.value ??
+          metric.values?.[metric.values.length - 1]?.value ??
+          0,
+      ])
+    );
+
+    // 2. Fetch reach separately (optional fallback if reach requires different params)
+    let reachValue = 0;
+    try {
+      const reachParams = new URLSearchParams({
+        metric: 'reach',
+        period: 'day',
+        access_token: cleanToken,
+      });
+      const reachRes = await fetch(
+        `https://graph.facebook.com/${GRAPH_API_VERSION}/${cleanId}/insights?${reachParams}`
+      );
+      const reachPayload = await reachRes.json();
+      if (reachRes.ok && !reachPayload.error) {
+        const reachMetric = (reachPayload.data || []).find((m) => m.name === 'reach');
+        reachValue =
+          reachMetric?.values?.[reachMetric.values.length - 1]?.value ??
+          reachMetric?.total_value?.value ??
+          0;
+      }
+    } catch {
+      // keep reachValue as 0 if separate reach call fails
+    }
+
     return {
       success: true,
       data: {
-        reach: values.reach ?? 0,
-        profileViews: values.profile_views ?? 0,
-        accountsEngaged: values.accounts_engaged ?? 0,
-        totalInteractions: values.total_interactions ?? 0,
+        reach: reachValue,
+        profileViews: totalValues.profile_views ?? 0,
+        accountsEngaged: totalValues.accounts_engaged ?? 0,
+        totalInteractions: totalValues.total_interactions ?? 0,
         fetchedAt: new Date().toISOString(),
       },
     };
