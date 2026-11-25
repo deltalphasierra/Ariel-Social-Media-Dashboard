@@ -97,12 +97,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
   };
 
   const handleTestMetaConnection = async (acc) => {
-    if (!acc.metaAccountId || !acc.metaAccessToken) {
+    if (!acc.metaAccessToken) {
       setTestResult(prev => ({
         ...prev,
         [acc.id]: {
           success: false,
-          message: 'Harap isi Instagram Business ID dan Meta Access Token terlebih dahulu.',
+          message: 'Harap isi Meta Access Token terlebih dahulu.',
         },
       }));
       return;
@@ -114,6 +114,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
     const res = await fetchInstagramProfile({
       igAccountId: acc.metaAccountId,
       accessToken: acc.metaAccessToken,
+      targetHandle: acc.handle,
     });
 
     setTestingAccId(null);
@@ -375,7 +376,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
                             <div>
                               <input
                                 type="text"
-                                placeholder="Instagram Business ID (contoh: 17841405822381234)"
+                                placeholder="Instagram Business ID (Opsional, kosongkan jika belum tahu)"
                                 value={acc.metaAccountId || ''}
                                 onChange={(e) => handleAccountChange(acc.id, 'metaAccountId', e.target.value)}
                                 className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono"
