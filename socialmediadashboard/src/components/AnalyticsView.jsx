@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import dayjs from 'dayjs';
 import {
   BarChart3,
   TrendingUp,
@@ -30,21 +29,17 @@ export default function AnalyticsView({
   const [sortDirection, setSortDirection] = useState('desc');
   // Duration filter: custom (all), weekly, monthly, quarterly, yearly
   const [duration, setDuration] = useState('custom');
-  const now = dayjs();
+  const now = new Date();
   const filteredHistorical = historicalAnalytics.filter(item => {
-    const date = dayjs(item.date, 'YYYY-MM-DD');
+    if (duration === 'custom') return true;
+    const date = new Date(item.date);
+    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
     switch (duration) {
-      case 'weekly':
-        return now.diff(date, 'day') <= 7;
-      case 'monthly':
-        return now.diff(date, 'day') <= 30;
-      case 'quarterly':
-        return now.diff(date, 'day') <= 90;
-      case 'yearly':
-        return now.diff(date, 'day') <= 365;
-      case 'custom':
-      default:
-        return true;
+      case 'weekly':    return diffDays <= 7;
+      case 'monthly':   return diffDays <= 30;
+      case 'quarterly': return diffDays <= 90;
+      case 'yearly':    return diffDays <= 365;
+      default:          return true;
     }
   });
 
