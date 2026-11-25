@@ -38,7 +38,38 @@ export async function fetchInstagramProfile({ igAccountId, accessToken, targetHa
       const meRes = await fetch(meAccountsUrl);
       const meData = await meRes.json();
 
-      if (meData && Array.isArray(meData.data) && meData.data.length > 0) {
+
+	if (igAccounts.length > 0) {
+  const formattedAccounts = igAccounts.map((ig) => ({
+    id: ig.id,
+    handle: `@${ig.username}`,
+    displayName: ig.name || ig.username,
+    avatar: ig.profile_picture_url || '',
+    followers: ig.followers_count || 0,
+    bio: ig.biography || '',
+    mediaCount: ig.media_count || 0,
+    pageName: ig.pageName,
+    pageId: ig.pageId,
+  }));
+
+  const selected =
+    (cleanTarget &&
+      formattedAccounts.find((acc) => acc.handle.replace('@', '').toLowerCase() === cleanTarget)) ||
+    (cleanId &&
+      formattedAccounts.find((acc) => acc.id === cleanId || acc.pageId === cleanId)) ||
+    formattedAccounts[0];
+
+  return {
+    success: true,
+    data: selected,
+    accounts: formattedAccounts, // <-- semua akun IG yang terdeteksi ada di sini
+    note: `Terhubung ke ${selected.handle} (total ${formattedAccounts.length} akun IG terdeteksi dari token ini).`,
+  };
+	}
+
+
+
+      /*if (meData && Array.isArray(meData.data) && meData.data.length > 0) {
         // Collect all linked Instagram accounts
         const igAccounts = [];
         for (const page of meData.data) {
@@ -120,7 +151,7 @@ export async function fetchInstagramProfile({ igAccountId, accessToken, targetHa
       }
     } catch (e) {
       // ignore and try Strategy 2
-    }
+    }*/
 
     // Strategy 2: If cleanId is given, check what cleanId actually is
     if (cleanId) {
