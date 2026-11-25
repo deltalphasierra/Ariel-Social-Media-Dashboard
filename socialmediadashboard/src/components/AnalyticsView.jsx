@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import dayjs from 'dayjs';
 import {
   BarChart3,
   TrendingUp,
@@ -27,6 +28,25 @@ export default function AnalyticsView({
 }) {
   const [sortField, setSortField] = useState('publishDate');
   const [sortDirection, setSortDirection] = useState('desc');
+  // Duration filter: custom (all), weekly, monthly, quarterly, yearly
+  const [duration, setDuration] = useState('custom');
+  const now = dayjs();
+  const filteredHistorical = historicalAnalytics.filter(item => {
+    const date = dayjs(item.date, 'YYYY-MM-DD');
+    switch (duration) {
+      case 'weekly':
+        return now.diff(date, 'day') <= 7;
+      case 'monthly':
+        return now.diff(date, 'day') <= 30;
+      case 'quarterly':
+        return now.diff(date, 'day') <= 90;
+      case 'yearly':
+        return now.diff(date, 'day') <= 365;
+      case 'custom':
+      default:
+        return true;
+    }
+  });
 
   // Filter published posts that have metrics
   const publishedPosts = posts.filter(p => {
@@ -114,6 +134,23 @@ export default function AnalyticsView({
         </div>
       </div>
 
+      {/* Duration filter */}
+      <div className="mt-2 flex items-center gap-2">
+        <label className="text-xs text-slate-400" htmlFor="durationSelect">Durasi:</label>
+        <select
+          id="durationSelect"
+          className="bg-slate-800 text-white text-xs py-0.5 px-2 rounded"
+          value={duration}
+          onChange={e => setDuration(e.target.value)}
+        >
+          <option value="custom">Semua (Custom)</option>
+          <option value="weekly">Mingguan (7 hari)</option>
+          <option value="monthly">Bulanan (30 hari)</option>
+          <option value="quarterly">Triwulanan (90 hari)</option>
+          <option value="yearly">Tahunan (365 hari)</option>
+        </select>
+      </div>
+
       {/* Aggregate Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-xl">
@@ -193,7 +230,7 @@ export default function AnalyticsView({
 
         {/* CSS/SVG Bar Chart visualization */}
         <div className="h-44 w-full flex items-end justify-between gap-3 pt-6 px-2 border-b border-slate-800">
-          {historicalAnalytics.map((item, idx) => {
+          {filteredHistorical.map((item, idx) => {
             const hPintu = ((item.pintuIg - 300) / 40) * 100;
             const hKlBiz = ((item.klBizIg - 2350) / 120) * 100;
             const hSinghaIg = ((item.singhaIg - 3650) / 200) * 100;
