@@ -19,11 +19,11 @@ export async function fetchInstagramProfile({ igAccountId, accessToken, targetHa
   const cleanId = (igAccountId || '').trim();
   const cleanTarget = (targetHandle || '').replace('@', '').trim().toLowerCase();
 
-  // Validate token format
-  if (!cleanToken.startsWith('EAA') && !cleanToken.includes('|')) {
+  // Validate token format (Meta access tokens start with EA... e.g. EAA, EAG, etc.)
+  if (!cleanToken.startsWith('EA') && !cleanToken.includes('|')) {
     return {
       success: false,
-      error: 'Format Token salah! Token Meta yang valid SELALU diawali dengan huruf "EAA..." (sangat panjang). Pastikan Anda menyalin dari kotak Access Token di Graph API Explorer, bukan App Secret.',
+      error: 'Format Token salah! Token Meta yang valid SELALU diawali dengan huruf "EA..." (sangat panjang). Pastikan Anda menyalin dari kotak Access Token di Graph API Explorer, bukan App Secret.',
     };
   }
 
