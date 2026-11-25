@@ -125,9 +125,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
         if (a.id === acc.id) {
           return {
             ...a,
+            metaAccountId: liveData.id || a.metaAccountId,
             handle: liveData.handle || a.handle,
             displayName: liveData.displayName || a.displayName,
-            followers: liveData.followers || a.followers,
+            followers: liveData.followers !== undefined ? liveData.followers : a.followers,
             bio: liveData.bio || a.bio,
             avatar: liveData.avatar || a.avatar,
             isMetaConnected: true,
@@ -140,7 +141,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
         ...prev,
         [acc.id]: {
           success: true,
-          message: `Berhasil terhubung ke Meta! Data followers (${liveData.followers.toLocaleString('id-ID')}) dan profil langsung diperbarui.`,
+          message: res.note
+            ? `Berhasil! ${res.note} Followers (${(liveData.followers || 0).toLocaleString('id-ID')}) diperbarui.`
+            : `Berhasil terhubung ke Meta! Data followers (${(liveData.followers || 0).toLocaleString('id-ID')}) dan profil langsung diperbarui.`,
         },
       }));
     } else {
