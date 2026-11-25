@@ -4,7 +4,7 @@ const GRAPH_API_VERSION = 'v27.0';
  * Meta Graph API Integration Service
  * Smart resolver:
  * 1. Checks /me/accounts to automatically discover all linked Instagram Business accounts.
- * 2. Matches by targetHandle so the user doesn't need to know their exact Instagram ID.
+ * 2. Matches by targetHandle or cleanId, or returns all discovered accounts.
  * 3. Falls back to direct ID lookup or Page lookup.
  * 4. Detects App ID vs Page ID vs Instagram ID and provides helpful human error messages.
  */
@@ -25,52 +25,20 @@ export async function fetchInstagramProfile({ igAccountId, accessToken, targetHa
   if (!cleanToken.startsWith('EA') && !cleanToken.includes('|')) {
     return {
       success: false,
-      error: 'Format Token salah! Token Meta yang valid SELALU diawali dengan huruf "EA..." (sangat panjang). Pastikan Anda menyalin dari kotak Access Token di Graph API Explorer, bukan App Secret.',
+      error:
+        'Format Token salah! Token Meta yang valid SELALU diawali dengan huruf "EA..." (sangat panjang). Pastikan Anda menyalin dari kotak Access Token di Graph API Explorer, bukan App Secret.',
     };
   }
 
   try {
     // Strategy 1: SMART AUTO-DISCOVERY via /me/accounts
-    // Query all Pages and linked Instagram accounts accessible by this token
     const meAccountsUrl = `https://graph.facebook.com/${GRAPH_API_VERSION}/me/accounts?fields=id,name,instagram_business_account{id,username,name,profile_picture_url,followers_count,biography,media_count}&access_token=${cleanToken}`;
-    
+
     try {
       const meRes = await fetch(meAccountsUrl);
       const meData = await meRes.json();
 
-
-	if (igAccounts.length > 0) {
-  const formattedAccounts = igAccounts.map((ig) => ({
-    id: ig.id,
-    handle: `@${ig.username}`,
-    displayName: ig.name || ig.username,
-    avatar: ig.profile_picture_url || '',
-    followers: ig.followers_count || 0,
-    bio: ig.biography || '',
-    mediaCount: ig.media_count || 0,
-    pageName: ig.pageName,
-    pageId: ig.pageId,
-  }));
-
-  const selected =
-    (cleanTarget &&
-      formattedAccounts.find((acc) => acc.handle.replace('@', '').toLowerCase() === cleanTarget)) ||
-    (cleanId &&
-      formattedAccounts.find((acc) => acc.id === cleanId || acc.pageId === cleanId)) ||
-    formattedAccounts[0];
-
-  return {
-    success: true,
-    data: selected,
-    accounts: formattedAccounts, // <-- semua akun IG yang terdeteksi ada di sini
-    note: `Terhubung ke ${selected.handle} (total ${formattedAccounts.length} akun IG terdeteksi dari token ini).`,
-  };
-	}
-
-
-
-      /*if (meData && Array.isArray(meData.data) && meData.data.length > 0) {
-        // Collect all linked Instagram accounts
+      if (meData && Array.isArray(meData.data) && meData.data.length > 0) {
         const igAccounts = [];
         for (const page of meData.data) {
           if (page.instagram_business_account) {
@@ -82,80 +50,48 @@ export async function fetchInstagramProfile({ igAccountId, accessToken, targetHa
           }
         }
 
-        // Try to match by targetHandle first.
-        if (cleanTarget) {
-          const match = igAccounts.find(ig => ig.username?.toLowerCase() === cleanTarget);
-          if (match) {
-            return {
-              success: true,
-              data: {
-                id: match.id, // the real Instagram Business Account ID (e.g. 178414...)
-                handle: `@${match.username}`,
-                displayName: match.name || match.username,
-                avatar: match.profile_picture_url || '',
-                followers: match.followers_count || 0,
-                bio: match.biography || '',
-                mediaCount: match.media_count || 0,
-              },
-              note: `Otomatis terhubung ke @${match.username} lewat Halaman "${match.pageName}"! ID Instagram asli (${match.id}) berhasil dipasang.`,
-            };
-          }
-        }
+        if (igAccounts.length > 0) {
+          const formattedAccounts = igAccounts.map((ig) => ({
+            id: ig.id,
+            handle: `@${ig.username}`,
+            displayName: ig.name || ig.username,
+            avatar: ig.profile_picture_url || '',
+            followers: ig.followers_count || 0,
+            bio: ig.biography || '',
+            mediaCount: ig.media_count || 0,
+            pageName: ig.pageName,
+            pageId: ig.pageId,
+          }));
 
-        // Try to match by cleanId if provided
-        if (cleanId) {
-          const matchById = igAccounts.find(ig => ig.id === cleanId || ig.pageId === cleanId);
-          if (matchById) {
-            return {
-              success: true,
-              data: {
-                id: matchById.id,
-                handle: `@${matchById.username}`,
-                displayName: matchById.name || matchById.username,
-                avatar: matchById.profile_picture_url || '',
-                followers: matchById.followers_count || 0,
-                bio: matchById.biography || '',
-                mediaCount: matchById.media_count || 0,
-              },
-              note: `Otomatis terhubung ke @${matchById.username}!`,
-            };
-          }
-        }
+          const selected =
+            (cleanTarget &&
+              formattedAccounts.find(
+                (acc) => acc.handle.replace('@', '').toLowerCase() === cleanTarget
+              )) ||
+            (cleanId &&
+              formattedAccounts.find((acc) => acc.id === cleanId || acc.pageId === cleanId)) ||
+            formattedAccounts[0];
 
-        // If target was not matched but there is at least 1 IG account, use the first one
-        if (igAccounts.length > 0 && !cleanTarget) {
-          const first = igAccounts[0];
           return {
             success: true,
-            data: {
-              id: first.id,
-              handle: `@${first.username}`,
-              displayName: first.name || first.username,
-              avatar: first.profile_picture_url || '',
-              followers: first.followers_count || 0,
-              bio: first.biography || '',
-              mediaCount: first.media_count || 0,
-            },
-            note: `Ditemukan akun @${first.username} di Halaman "${first.pageName}".`,
+            data: selected,
+            accounts: formattedAccounts,
+            note: `Terhubung ke ${selected.handle} (total ${formattedAccounts.length} akun IG terdeteksi dari token ini).`,
           };
         }
 
-        // If pages exist but none has instagram_business_account linked
-        if (igAccounts.length === 0) {
-          const pageNames = meData.data.map(p => `"${p.name}"`).join(', ');
-          return {
-            success: false,
-            error: `Token kamu terhubung ke Halaman Facebook (${pageNames}), tetapi Halaman ini BELUM ditautkan ke Akun Instagram Bisnis di Pengaturan Meta Business Suite (Akun &rarr; Akun Instagram).`,
-          };
-        }
+        const pageNames = meData.data.map((p) => `"${p.name}"`).join(', ');
+        return {
+          success: false,
+          error: `Token kamu terhubung ke Halaman Facebook (${pageNames}), tetapi Halaman ini BELUM ditautkan ke Akun Instagram Bisnis di Pengaturan Meta Business Suite (Akun -> Akun Instagram).`,
+        };
       }
     } catch (e) {
       // ignore and try Strategy 2
-    }*/
+    }
 
     // Strategy 2: If cleanId is given, check what cleanId actually is
     if (cleanId) {
-      // Check if cleanId is a direct Instagram Account
       const directUrl = `https://graph.facebook.com/${GRAPH_API_VERSION}/${cleanId}?fields=id,username,name,profile_picture_url,followers_count,biography,media_count&access_token=${cleanToken}`;
       const directRes = await fetch(directUrl);
       const directData = await directRes.json();
@@ -175,7 +111,6 @@ export async function fetchInstagramProfile({ igAccountId, accessToken, targetHa
         };
       }
 
-      // Check if cleanId is a Page with instagram_business_account
       const pageUrl = `https://graph.facebook.com/${GRAPH_API_VERSION}/${cleanId}?fields=name,instagram_business_account{id,username,name,profile_picture_url,followers_count,biography,media_count}&access_token=${cleanToken}`;
       const pageRes = await fetch(pageUrl);
       const pageData = await pageRes.json();
@@ -197,8 +132,10 @@ export async function fetchInstagramProfile({ igAccountId, accessToken, targetHa
         };
       }
 
-      // If cleanId returned error: check if it's an App ID
-      if (directData.error?.message?.includes('nonexisting field') || pageData.error?.message?.includes('nonexisting field')) {
+      if (
+        directData.error?.message?.includes('nonexisting field') ||
+        pageData.error?.message?.includes('nonexisting field')
+      ) {
         return {
           success: false,
           error: `ID "${cleanId}" kemungkinan adalah App ID (ID Aplikasi Meta), BUKAN ID Akun Instagram. Kosongkan kolom ID ini dan cukup isi Token EAA... saja, sistem akan mencari akun Instagram-mu secara otomatis!`,
@@ -215,7 +152,8 @@ export async function fetchInstagramProfile({ igAccountId, accessToken, targetHa
 
     return {
       success: false,
-      error: 'Tidak ditemukan akun Instagram Bisnis yang terhubung dengan token ini. Pastikan token memiliki izin "instagram_basic" dan "pages_show_list".',
+      error:
+        'Tidak ditemukan akun Instagram Bisnis yang terhubung dengan token ini. Pastikan token memiliki izin "instagram_basic" dan "pages_show_list".',
     };
   } catch (err) {
     return {
@@ -239,7 +177,6 @@ export async function fetchInstagramInsights({ igAccountId, accessToken }) {
   const cleanToken = accessToken.trim();
 
   try {
-    // 1. Fetch total_value metrics
     const totalValueParams = new URLSearchParams({
       metric: 'profile_views,accounts_engaged,total_interactions',
       metric_type: 'total_value',
@@ -255,20 +192,19 @@ export async function fetchInstagramInsights({ igAccountId, accessToken }) {
     if (!totalRes.ok || totalPayload.error) {
       return {
         success: false,
-        error: totalPayload.error?.message || 'Meta tidak dapat mengambil total_value insights akun ini.',
+        error:
+          totalPayload.error?.message ||
+          'Meta tidak dapat mengambil total_value insights akun ini.',
       };
     }
 
     const totalValues = Object.fromEntries(
       (totalPayload.data || []).map((metric) => [
         metric.name,
-        metric.total_value?.value ??
-          metric.values?.[metric.values.length - 1]?.value ??
-          0,
+        metric.total_value?.value ?? metric.values?.[metric.values.length - 1]?.value ?? 0,
       ])
     );
 
-    // 2. Fetch reach separately (optional fallback if reach requires different params)
     let reachValue = 0;
     try {
       const reachParams = new URLSearchParams({
@@ -362,4 +298,3 @@ export async function sendInstagramDirectMessage({ igUserId, recipientId, messag
     return { success: false, error: err.message };
   }
 }
-
