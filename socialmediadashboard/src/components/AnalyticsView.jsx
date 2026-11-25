@@ -10,8 +10,6 @@ import {
   Bookmark,
   ArrowUpDown,
   FileSpreadsheet,
-  Calendar,
-  Layers,
 } from 'lucide-react';
 import { InstagramIcon, TikTokIcon } from './SocialIcons';
 import { exportAnalyticsToCSV } from '../utils/exportUtils';
@@ -20,29 +18,12 @@ export default function AnalyticsView({
   projects,
   accounts,
   posts,
-  historicalAnalytics,
   selectedProjectId,
   selectedAccountId,
   onOpenExport,
 }) {
   const [sortField, setSortField] = useState('publishDate');
   const [sortDirection, setSortDirection] = useState('desc');
-  // Duration filter: custom (all), weekly, monthly, quarterly, yearly
-  const [duration, setDuration] = useState('custom');
-  const now = new Date();
-  const filteredHistorical = historicalAnalytics.filter(item => {
-    if (duration === 'custom') return true;
-    const date = new Date(item.date);
-    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    switch (duration) {
-      case 'weekly':    return diffDays <= 7;
-      case 'monthly':   return diffDays <= 30;
-      case 'quarterly': return diffDays <= 90;
-      case 'yearly':    return diffDays <= 365;
-      default:          return true;
-    }
-  });
-
   // Filter published posts that have metrics
   const publishedPosts = posts.filter(p => {
     if (selectedProjectId !== 'all' && p.projectId !== selectedProjectId) return false;
@@ -107,7 +88,7 @@ export default function AnalyticsView({
           </div>
           <h2 className="text-xl font-bold text-white">Performa Metrik & Interaksi</h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Analisis views, likes, reach, dan engagement rate untuk 3 akun Instagram dan 1 akun TikTok.
+            Analisis performa konten yang tercatat dan insights akun yang berhasil dimuat dari Meta.
           </p>
         </div>
 
@@ -127,23 +108,6 @@ export default function AnalyticsView({
             <span>Export Laporan Lengkap</span>
           </button>
         </div>
-      </div>
-
-      {/* Duration filter */}
-      <div className="mt-2 flex items-center gap-2">
-        <label className="text-xs text-slate-400" htmlFor="durationSelect">Durasi:</label>
-        <select
-          id="durationSelect"
-          className="bg-slate-800 text-white text-xs py-0.5 px-2 rounded"
-          value={duration}
-          onChange={e => setDuration(e.target.value)}
-        >
-          <option value="custom">Semua (Custom)</option>
-          <option value="weekly">Mingguan (7 hari)</option>
-          <option value="monthly">Bulanan (30 hari)</option>
-          <option value="quarterly">Triwulanan (90 hari)</option>
-          <option value="yearly">Tahunan (365 hari)</option>
-        </select>
       </div>
 
       {/* Aggregate Stats Cards */}
@@ -197,79 +161,10 @@ export default function AnalyticsView({
         </div>
       </div>
 
-      {/* Visual Chart: 7-Day Follower Trend Visualizer */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-white">Tren Pertumbuhan Followers 7 Hari Terakhir</h3>
-            <p className="text-xs text-slate-400">Pantauan grafik kenaikan audiens di tiap akun</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 text-xs">
-            <span className="flex items-center gap-1.5 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-pink-500"></span> @pintupotret.id
-            </span>
-            <span className="flex items-center gap-1.5 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> @klbizhub_malang
-            </span>
-            <span className="flex items-center gap-1.5 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span> @singhasarihuniankomersial
-            </span>
-            <span className="flex items-center gap-1.5 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> @singhasarihuniankomersil (TikTok)
-            </span>
-            <span className="flex items-center gap-1.5 text-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> @riversidemalang
-            </span>
-          </div>
-        </div>
-
-        {/* CSS/SVG Bar Chart visualization */}
-        <div className="h-44 w-full flex items-end justify-between gap-3 pt-6 px-2 border-b border-slate-800">
-          {filteredHistorical.map((item, idx) => {
-            const hPintu = ((item.pintuIg - 300) / 40) * 100;
-            const hKlBiz = ((item.klBizIg - 2350) / 120) * 100;
-            const hSinghaIg = ((item.singhaIg - 3650) / 200) * 100;
-            const hSinghaTt = ((item.singhaTt - 8000) / 900) * 100;
-            const hRiver = ((item.riverIg - 3980) / 160) * 100;
-
-            return (
-              <div key={idx} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
-                <div className="w-full flex items-end justify-center gap-1 h-32">
-                  <div
-                    style={{ height: `${Math.max(15, Math.min(100, hPintu))}%` }}
-                    className="w-1.5 bg-pink-500 rounded-t hover:brightness-125 transition-all"
-                    title={`Pintu Potret: ${item.pintuIg}`}
-                  />
-                  <div
-                    style={{ height: `${Math.max(15, Math.min(100, hKlBiz))}%` }}
-                    className="w-1.5 bg-blue-500 rounded-t hover:brightness-125 transition-all"
-                    title={`KL Bizhub: ${item.klBizIg}`}
-                  />
-                  <div
-                    style={{ height: `${Math.max(15, Math.min(100, hSinghaIg))}%` }}
-                    className="w-1.5 bg-amber-400 rounded-t hover:brightness-125 transition-all"
-                    title={`Singhasari IG: ${item.singhaIg}`}
-                  />
-                  <div
-                    style={{ height: `${Math.max(15, Math.min(100, hSinghaTt))}%` }}
-                    className="w-1.5 bg-cyan-400 rounded-t hover:brightness-125 transition-all"
-                    title={`Singhasari TikTok: ${item.singhaTt}`}
-                  />
-                  <div
-                    style={{ height: `${Math.max(15, Math.min(100, hRiver))}%` }}
-                    className="w-1.5 bg-emerald-400 rounded-t hover:brightness-125 transition-all"
-                    title={`Riverside Malang: ${item.riverIg}`}
-                  />
-                </div>
-                <span className="text-[10px] text-slate-500 font-mono group-hover:text-slate-300">
-                  {item.date}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <h3 className="text-sm font-semibold text-white">Tren pertumbuhan followers</h3>
+        <p className="text-xs text-slate-400 mt-1">Riwayat pertumbuhan akan tersedia setelah dashboard menyimpan snapshot followers berkala dari akun Meta yang terhubung.</p>
       </div>
-
       {/* Detailed Post Performance Table with Sortable Columns */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
@@ -372,3 +267,4 @@ export default function AnalyticsView({
     </div>
   );
 }
+

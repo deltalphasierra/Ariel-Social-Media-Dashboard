@@ -16,34 +16,33 @@ import {
   initialAccounts,
   initialPosts,
   initialTeamMembers,
-  initialHistoricalAnalytics,
 } from './data/initialData';
 import { initialComments, initialDMs } from './data/initialInboxData';
 
 export default function App() {
-  // Load state from localStorage or fallback to defaults (with automatic migration from legacy dummy accounts)
+  // Remove generated sample data before the first render so it is never
+  // briefly shown or written back by the persistence effects below.
+  if (localStorage.getItem('omnisocial_cleared_v3') !== '1') {
+    ['projects', 'accounts', 'posts', 'team', 'comments', 'dms'].forEach((key) => {
+      localStorage.removeItem(`omnisocial_${key}`);
+    });
+    localStorage.setItem('omnisocial_cleared_v3', '1');
+  }
+
+  // Load state from localStorage or fallback to empty defaults
   const [projects, setProjects] = useState(() => {
     const saved = localStorage.getItem('omnisocial_projects');
-    if (saved && !saved.includes('Aura Official')) {
-      return JSON.parse(saved);
-    }
-    return initialProjects;
+    return saved ? JSON.parse(saved) : initialProjects;
   });
 
   const [accounts, setAccounts] = useState(() => {
     const saved = localStorage.getItem('omnisocial_accounts');
-    if (saved && !saved.includes('@aura.official')) {
-      return JSON.parse(saved);
-    }
-    return initialAccounts;
+    return saved ? JSON.parse(saved) : initialAccounts;
   });
 
   const [posts, setPosts] = useState(() => {
     const saved = localStorage.getItem('omnisocial_posts');
-    if (saved && !saved.includes('Linen Shirt')) {
-      return JSON.parse(saved);
-    }
-    return initialPosts;
+    return saved ? JSON.parse(saved) : initialPosts;
   });
 
   const [teamMembers, setTeamMembers] = useState(() => {
@@ -61,7 +60,6 @@ export default function App() {
     return saved ? JSON.parse(saved) : initialDMs;
   });
 
-  const [historicalAnalytics] = useState(initialHistoricalAnalytics);
 
   // Active filters and views
   const [selectedProjectId, setSelectedProjectId] = useState('all');
@@ -177,7 +175,7 @@ export default function App() {
   };
 
   const handleResetDefaultData = () => {
-    if (window.confirm('Apakah kamu yakin ingin mengembalikan seluruh data ke contoh awal?')) {
+    if (window.confirm('Hapus semua data dashboard yang tersimpan di browser ini?')) {
       localStorage.clear();
       setProjects(initialProjects);
       setAccounts(initialAccounts);
@@ -282,7 +280,6 @@ export default function App() {
               projects={projects}
               accounts={accounts}
               posts={filteredPosts}
-              historicalAnalytics={historicalAnalytics}
               selectedProjectId={selectedProjectId}
               selectedAccountId={selectedAccountId}
               onOpenExport={() => setIsExportModalOpen(true)}

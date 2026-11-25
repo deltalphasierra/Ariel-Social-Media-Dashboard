@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   X,
   Settings,
@@ -18,7 +18,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { InstagramIcon, TikTokIcon } from './SocialIcons';
-import { fetchInstagramProfile } from '../utils/metaService';
+import { fetchInstagramInsights, fetchInstagramProfile } from '../utils/metaService';
 
 export default function SettingsModal({
   isOpen,
@@ -33,9 +33,7 @@ export default function SettingsModal({
   onImportBackup,
   onResetDefaultData,
 }) {
-  if (!isOpen) return null;
-
-  const [activeTab, setActiveTab] = useState('meta'); // 'meta' | 'cloud' | 'ai' | 'backup'
+  const [activeTab, setActiveTab] = useState('meta');
   const [apiKeyInput, setApiKeyInput] = useState(geminiApiKey || '');
   const [copiedSql, setCopiedSql] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -43,8 +41,18 @@ export default function SettingsModal({
   // Editable accounts state inside modal
   const [localAccounts, setLocalAccounts] = useState(accounts);
   const [testingAccId, setTestingAccId] = useState(null);
-  const [testResult, setTestResult] = useState({}); // { [accId]: { success: boolean, message: string } }
+  const [testResult, setTestResult] = useState({});
   const [showMetaGuide, setShowMetaGuide] = useState(false);
+
+  // New account form state
+  const [newHandle, setNewHandle] = useState('');
+  const [newToken, setNewToken] = useState('');
+  const [connectingNew, setConnectingNew] = useState(false);
+  const [newConnectResult, setNewConnectResult] = useState(null);
+
+  useEffect(() => setLocalAccounts(accounts), [accounts]);
+
+  if (!isOpen) return null;
 
   const supabaseSqlSchema = `-- Schema Tabel Gratis untuk OmniSocial Dashboard di Supabase:
 CREATE TABLE IF NOT EXISTS projects (
@@ -122,7 +130,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
     if (res.success) {
       // Auto update account with real live data from Meta
       const liveData = res.data;
-      setLocalAccounts(prev => prev.map(a => {
+      const insightResult = await fetchInstagramInsights({ igAccountId: liveData.id, accessToken: acc.metaAccessToken });
+      const updatedAccounts = localAccounts.map(a => {
         if (a.id === acc.id) {
           return {
             ...a,
@@ -133,18 +142,24 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
             bio: liveData.bio || a.bio,
             avatar: liveData.avatar || a.avatar,
             isMetaConnected: true,
+            metaInsights: insightResult.success ? insightResult.data : a.metaInsights || null,
           };
         }
         return a;
-      }));
+      });
+
+      // Auto-save to local state, global app state, AND localStorage
+      setLocalAccounts(updatedAccounts);
+      setAccounts(updatedAccounts);
+      localStorage.setItem('omnisocial_accounts', JSON.stringify(updatedAccounts));
 
       setTestResult(prev => ({
         ...prev,
         [acc.id]: {
           success: true,
           message: res.note
-            ? `Berhasil! ${res.note} Followers (${(liveData.followers || 0).toLocaleString('id-ID')}) diperbarui.`
-            : `Berhasil terhubung ke Meta! Data followers (${(liveData.followers || 0).toLocaleString('id-ID')}) dan profil langsung diperbarui.`,
+            ? `Berhasil! ${res.note} Followers (${(liveData.followers || 0).toLocaleString('id-ID')}) diperbarui & disimpan otomatis.`
+            : `Berhasil terhubung ke Meta! Data followers (${(liveData.followers || 0).toLocaleString('id-ID')}) dan profil langsung disimpan otomatis.`,
         },
       }));
     } else {
@@ -163,6 +178,71 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
     localStorage.setItem('omnisocial_accounts', JSON.stringify(localAccounts));
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2500);
+  };
+
+  // Add an account only after Meta verifies its identity.
+  const handleConnectNewAccount = async () => {
+    if (!newToken.trim()) {
+      setNewConnectResult({ success: false, message: 'Isi Meta Access Token terlebih dahulu.' });
+      return;
+    }
+    setConnectingNew(true);
+    setNewConnectResult(null);
+
+    const normalizedHandle = newHandle.trim().replace(/^@/, '');
+    const res = await fetchInstagramProfile({
+      igAccountId: '',
+      accessToken: newToken.trim(),
+      targetHandle: normalizedHandle,
+    });
+
+    if (res.success) {
+      const d = res.data;
+      const insightResult = await fetchInstagramInsights({ igAccountId: d.id, accessToken: newToken.trim() });
+      if (!insightResult.success) {
+        setNewConnectResult({
+          success: false,
+          message: `Profil Meta terverifikasi, tetapi insights belum bisa dibaca. Akun belum ditambahkan. Periksa izin instagram_manage_insights. Detail: ${insightResult.error}`,
+        });
+        setConnectingNew(false);
+        return;
+      }
+      const projectId = `project-${d.id}`;
+      const newProject = {
+        id: projectId,
+        name: d.displayName || d.handle,
+        category: 'Instagram',
+        description: `Akun Meta ${d.handle}`,
+        color: '#e1306c',
+      };
+      const newAcc = {
+        id: `acc-ig-${d.id}`,
+        projectId,
+        platform: 'instagram',
+        handle: d.handle || `@${newHandle.trim().replace('@', '')}`,
+        displayName: d.displayName || d.handle || newHandle,
+        avatar: d.avatar || '',
+        followers: d.followers || 0,
+        growthRate: '0%',
+        bio: d.bio || '',
+        metaAccountId: d.id || '',
+        metaAccessToken: newToken.trim(),
+        isMetaConnected: true,
+        metaInsights: insightResult.data,
+      };
+      const updated = [...localAccounts.filter((account) => account.id !== newAcc.id), newAcc];
+      setProjects((prev) => [...prev.filter((project) => project.id !== projectId), newProject]);
+      setLocalAccounts(updated);
+      setAccounts(updated);
+      localStorage.setItem('omnisocial_accounts', JSON.stringify(updated));
+      localStorage.setItem('omnisocial_projects', JSON.stringify([...projects.filter((project) => project.id !== projectId), newProject]));
+      setNewConnectResult({ success: true, message: `Berhasil menghubungkan ${newAcc.handle}. Profil, followers, dan insights akun berhasil dimuat.` });
+      setNewHandle('');
+      setNewToken('');
+    } else {
+      setNewConnectResult({ success: false, message: `Gagal: ${res.error}` });
+    }
+    setConnectingNew(false);
   };
 
   const handleSaveSettings = () => {
@@ -257,10 +337,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
                 <div>
                   <h4 className="font-bold text-white text-xs flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span>Kelola 3 Akun Instagram & 1 Akun TikTok Aslimu</span>
+                    <span>Hubungkan akun Instagram Professional</span>
                   </h4>
                   <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
-                    Kamu bisa langsung mengganti username (@), nama brand, dan followers akun aslimu secara manual, ATAU menyambungkannya ke **Meta Graph API** untuk menarik data otomatis!
+                    Akun hanya akan ditambahkan setelah Meta berhasil memverifikasi koneksi. Nama profil, followers, dan insights akan dimuat dari Meta.
                   </p>
                 </div>
                 <button
@@ -291,9 +371,49 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
                 </div>
               )}
 
-              {/* List of 4 Accounts */}
+              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-4 space-y-3">
+                <h4 className="font-semibold text-white">Hubungkan akun baru</h4>
+                <p className="text-[11px] text-slate-400">Gunakan token akses Meta untuk akun Instagram Business atau Creator yang terhubung ke Facebook Page. Username opsional; jika kosong, akun pertama yang dapat diakses akan dipilih.</p>
+                <input
+                  type="text"
+                  value={newHandle}
+                  onChange={(event) => setNewHandle(event.target.value)}
+                  placeholder="Username Instagram (opsional)"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white"
+                />
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="password"
+                    value={newToken}
+                    onChange={(event) => setNewToken(event.target.value)}
+                    placeholder="Meta Access Token (EA...)"
+                    className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleConnectNewAccount}
+                    disabled={connectingNew || !newToken.trim()}
+                    className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-2"
+                  >
+                    <Link2 className="w-3.5 h-3.5" />
+                    {connectingNew ? 'Menghubungkan...' : 'Hubungkan ke Meta'}
+                  </button>
+                </div>
+                {newConnectResult && (
+                  <div className={`p-2 rounded text-[11px] ${newConnectResult.success ? 'bg-emerald-950/60 text-emerald-300' : 'bg-red-950/60 text-red-300'}`}>
+                    {newConnectResult.message}
+                  </div>
+                )}
+              </div>
+
+              {/* Only verified Meta accounts are listed here. */}
               <div className="space-y-4 pt-1">
-                {localAccounts.map((acc, index) => {
+                {localAccounts.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-slate-700 p-6 text-center text-xs text-slate-400">
+                    Belum ada akun terhubung. Dashboard akan menampilkan akun setelah verifikasi Meta berhasil.
+                  </div>
+                )}
+                {localAccounts.map((acc) => {
                   const isIG = acc.platform === 'instagram';
                   const project = projects?.find(p => p.id === acc.projectId);
                   const isTesting = testingAccId === acc.id;
@@ -332,7 +452,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
                           <input
                             type="text"
                             value={acc.handle}
-                            onChange={(e) => handleAccountChange(acc.id, 'handle', e.target.value)}
+                            readOnly
                             placeholder="@nama_akun_kamu"
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
                           />
@@ -345,7 +465,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
                           <input
                             type="text"
                             value={acc.displayName}
-                            onChange={(e) => handleAccountChange(acc.id, 'displayName', e.target.value)}
+                            readOnly
                             placeholder="Contoh: Brand Fashion Saya"
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                           />
@@ -358,7 +478,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
                           <input
                             type="number"
                             value={acc.followers}
-                            onChange={(e) => handleAccountChange(acc.id, 'followers', Number(e.target.value))}
+                            readOnly
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
                           />
                         </div>
@@ -563,13 +683,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE posts, accounts;`;
                   <span>Reset Data</span>
                 </span>
                 <p className="text-[11px] text-slate-400">
-                  Kembalikan seluruh project, 3 akun Instagram, 1 TikTok, dan analitik ke contoh default awal.
+                  Hapus project, akun, postingan, dan pengaturan yang tersimpan di browser ini.
                 </p>
                 <button
                   onClick={onResetDefaultData}
                   className="mt-1 px-3 py-1.5 bg-red-600/30 hover:bg-red-600/50 text-red-200 border border-red-500/40 rounded-lg text-xs font-semibold"
                 >
-                  Reset ke Contoh Awal
+                  Kosongkan Semua Data
                 </button>
               </div>
             </div>

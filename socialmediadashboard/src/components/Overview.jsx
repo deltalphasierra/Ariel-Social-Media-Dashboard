@@ -31,6 +31,7 @@ export default function Overview({
   });
 
   const filteredAccounts = accounts.filter((a) => {
+    if (!a.isMetaConnected) return false;
     if (selectedProjectId !== 'all' && a.projectId !== selectedProjectId) return false;
     if (selectedAccountId !== 'all' && a.id !== selectedAccountId) return false;
     return true;
@@ -47,7 +48,7 @@ export default function Overview({
   }, 0);
   const avgEngagementRate = publishedPosts.length > 0 && totalViews > 0
     ? ((totalEngagements / totalViews) * 100).toFixed(2)
-    : '4.85';
+    : '0.00';
 
   const scheduledCount = filteredPosts.filter(p => p.status === 'scheduled').length;
   const inReviewCount = filteredPosts.filter(p => p.status === 'review').length;
@@ -68,13 +69,13 @@ export default function Overview({
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-semibold mb-2">
               <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Multi-Project Social Hub • Zero Cost Setup</span>
+              <span>OmniSocial • Terhubung ke Meta</span>
             </div>
             <h2 className="text-2xl font-bold text-white tracking-tight">
               Selamat datang kembali, Tim Media Sosial! 🚀
             </h2>
             <p className="text-slate-300 text-xs mt-1 max-w-xl">
-              Memantau {projects.length} project aktif ({accounts.filter(a => a.platform === 'instagram').length} Instagram & {accounts.filter(a => a.platform === 'tiktok').length} TikTok). Kelola ide, approval tim, kalender jadwal, hingga ekspor laporan bulanan langsung dari sini.
+              {accounts.filter((account) => account.isMetaConnected).length} akun terhubung. Profil dan insights ditampilkan setelah verifikasi Meta berhasil.
             </p>
           </div>
           <div className="flex items-center gap-2.5">
@@ -110,9 +111,7 @@ export default function Overview({
             <span className="text-2xl font-bold text-white tracking-tight">
               {totalFollowers.toLocaleString('id-ID')}
             </span>
-            <span className="text-xs font-semibold text-emerald-400 flex items-center">
-              <TrendingUp className="w-3 h-3 mr-0.5" /> +5.2%
-            </span>
+            <span className="text-[10px] text-slate-500">Data Meta</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">Gabungan akun aktif yang terpilih</p>
         </div>
@@ -127,11 +126,9 @@ export default function Overview({
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-white tracking-tight">
-              {totalViews > 0 ? totalViews.toLocaleString('id-ID') : '42.550'}
+              {totalViews.toLocaleString('id-ID')}
             </span>
-            <span className="text-xs font-semibold text-emerald-400 flex items-center">
-              <TrendingUp className="w-3 h-3 mr-0.5" /> +14.8%
-            </span>
+            <span className="text-[10px] text-slate-500">Data konten</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">Dari postingan published terbaru</p>
         </div>
@@ -148,7 +145,7 @@ export default function Overview({
             <span className="text-2xl font-bold text-white tracking-tight">
               {avgEngagementRate}%
             </span>
-            <span className="text-xs font-semibold text-emerald-400">Tinggi (Good)</span>
+            <span className="text-[10px] text-slate-500">Dari data konten</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">Standar industri: 2.5% - 4.0%</p>
         </div>
@@ -182,11 +179,16 @@ export default function Overview({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {accounts.map((acc) => {
+          {accounts.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-700 p-6 text-center text-xs text-slate-400">
+              Belum ada akun terhubung. Hubungkan akun Instagram melalui menu Pengaturan untuk mulai memuat profil dan insights Meta.
+            </div>
+          ) : <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {accounts.filter((account) => account.isMetaConnected).map((acc) => {
               const isIG = acc.platform === 'instagram';
               const project = projects.find(p => p.id === acc.projectId);
               const postCount = posts.filter(p => p.accountId === acc.id).length;
+              const insights = acc.metaInsights;
 
               return (
                 <div
@@ -232,14 +234,20 @@ export default function Overview({
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-slate-400 text-[10px] block">Pipeline Konten</span>
-                      <span className="font-semibold text-indigo-400">{postCount} Post</span>
+                      <span className="text-slate-400 text-[10px] block">Jangkauan hari ini</span>
+                      <span className="font-semibold text-indigo-400">{insights ? insights.reach.toLocaleString('id-ID') : 'Belum tersedia'}</span>
                     </div>
                   </div>
+                  {insights && <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-800/80 text-center">
+                    <div><span className="block text-[10px] text-slate-500">Kunjungan profil</span><span className="text-xs font-semibold text-white">{insights.profileViews.toLocaleString('id-ID')}</span></div>
+                    <div><span className="block text-[10px] text-slate-500">Akun dijangkau</span><span className="text-xs font-semibold text-white">{insights.accountsEngaged.toLocaleString('id-ID')}</span></div>
+                    <div><span className="block text-[10px] text-slate-500">Interaksi</span><span className="text-xs font-semibold text-white">{insights.totalInteractions.toLocaleString('id-ID')}</span></div>
+                  </div>}
+                  {!insights && <p className="mt-3 text-[10px] text-amber-400">Profil tersambung. Insights belum tersedia untuk token ini.</p>}
                 </div>
               );
             })}
-          </div>
+          </div>}
 
           {/* Workflow Pipeline Status Bar */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">

@@ -63,45 +63,18 @@ export default function SocialInbox({
   const handleQuickAiDraft = (type) => {
     if (inboxTab === 'comments' && activeComment) {
       const name = activeComment.senderName.split(' ')[0];
-      const handle = activeAccount?.handle || '';
-
-      if (handle.includes('pintupotret')) {
-        if (type === 'price') {
-          setReplyText(`Halo Kak ${name}! ✨ Untuk pricelist foto wisuda & prewedding lengkap dengan bonus cetak, boleh kami kirimkan via DM atau WhatsApp ya kak? Silakan cek DM kak ya!`);
-        } else if (type === 'wa') {
-          setReplyText(`Halo Kak ${name}! Mau tanya ketersediaan tanggal & booking slot? Bisa langsung WhatsApp admin Pintu Potret di link bio ya kak. Ditunggu momen indahnya! 📸`);
-        } else {
-          setReplyText(`Halo Kak ${name}! Terima kasih banyak sudah mampir. Betul banget, kami bisa melayani sesi outdoor di seluruh area Malang & Pasuruan ya kak. Cek DM untuk detailnya ya! ✨`);
-        }
-      } else if (handle.includes('klbizhub')) {
-        if (type === 'price') {
-          setReplyText(`Selamat siang Pak/Bu ${name}. Untuk ketersediaan unit gudang & ruko serta skema cicilan komersial di KL Bizhub Malang, kami kirimkan e-brochure lengkapnya melalui DM nggih.`);
-        } else if (type === 'survey') {
-          setReplyText(`Halo Pak/Bu ${name}! Akses jalan kami sangat luas dengan keamanan 24 jam. Apakah berkenan untuk kami dampingi survey unit langsung di lokasi minggu ini?`);
-        } else {
-          setReplyText(`Terima kasih atas pertanyaannya Pak/Bu ${name}. Tim konsultan properti komersial KL Bizhub siap membantu. Kami kirimkan detail spesifikasi unit ke DM ya!`);
-        }
+      if (type === 'price') {
+        setReplyText(`Halo Kak ${name}! Terima kasih sudah bertanya. Tim kami akan mengirimkan informasi harga dan detailnya melalui DM ya. ✨`);
+      } else if (type === 'survey') {
+        setReplyText(`Halo Kak ${name}! Terima kasih atas ketertarikannya. Silakan kirim waktu yang nyaman, nanti tim kami bantu atur jadwal konsultasi.`);
+      } else if (type === 'wa') {
+        setReplyText(`Halo Kak ${name}! Terima kasih sudah menghubungi kami. Silakan cek DM untuk informasi dan langkah selanjutnya ya.`);
       } else {
-        // Singhasari or Riverside Property
-        if (type === 'price') {
-          setReplyText(`Halo Kak ${name}! Untuk promo subsidi DP, angsuran KPR, dan e-brochure tipe rumah impian di ${activeAccount?.displayName}, kami kirimkan detailnya ke DM sekarang ya kak! 🏡`);
-        } else if (type === 'survey') {
-          setReplyText(`Halo Kak ${name}! Yuk rasakan langsung sejuknya lingkungan & suasana asri di lokasi. Kami siap temani survey unit contoh kapan saja. Mau weekend ini kak? ✨`);
-        } else {
-          setReplyText(`Terima kasih Kak ${name}! Lokasi kami sangat strategis dan siap huni. Kami kirimkan info denah & pricelist lengkap via DM ya!`);
-        }
+        setReplyText(`Halo Kak ${name}! Terima kasih banyak sudah mampir dan meninggalkan komentar. Kami senang bisa membantu. ✨`);
       }
     } else if (inboxTab === 'dms' && activeDM) {
       const name = activeDM.senderName.split(' ')[0];
-      const handle = activeAccount?.handle || '';
-
-      if (handle.includes('pintupotret')) {
-        setReplyText(`Halo Kak ${name}! ✨ Terima kasih sudah menghubungi Pintu Potret. Untuk tanggal tersebut slotnya masih available! Paket kami sudah include fotografer, videografer, all soft file, dan color grading estetik. Boleh kami kirimkan pricelist lengkapnya kak?`);
-      } else if (handle.includes('klbizhub')) {
-        setReplyText(`Selamat siang Pak/Bu ${name}. Terima kasih telah menghubungi KL Bizhub Malang. Unit gudang & ruko siap pakai masih tersedia dengan akses kontainer leluasa. Kapan waktu yang pas untuk kami jadwalkan kunjungan survey lokasi bersama tim sales kami?`);
-      } else {
-        setReplyText(`Halo Kak ${name}! Senang sekali bisa menyapa. Promo khusus bulan ini ada free biaya BPHTB, notaris, dan subsidi DP. Apakah ingin kami bantu hitungkan simulasi cicilan KPR-nya kak? 🏡`);
-      }
+      setReplyText(`Halo Kak ${name}! Terima kasih sudah menghubungi kami. Ceritakan informasi yang kamu butuhkan, dan tim kami akan segera membantu. ✨`);
     }
   };
 
